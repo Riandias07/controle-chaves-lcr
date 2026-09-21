@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chaves LCR</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh}
+
+.header{background:#1e293b;padding:12px 16px;position:sticky;top:0;z-index:10;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:17px;font-weight:700}
+.header span{font-size:11px;color:#94a3b8;display:block;margin-top:2px}
+.header-btns{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.btn-res{background:#3b82f6;color:#fff;border:none;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-imp{background:#1e3a5f;color:#94a3b8;border:1px solid #334155;padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer}
+
+.tabs{display:flex;background:#1e293b;border-bottom:1px solid #334155;overflow-x:auto}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:12px 14px;text-align:center;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab.on{color:#3b82f6;border-bottom-color:#3b82f6}
+
+.prog{height:3px;background:#334155}
+.prog div{height:100%;background:#22c55e;transition:width .3s}
+
+.lista{padding:10px;display:flex;flex-direction:column;gap:6px}
+.albl{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:8px 4px 2px}
+
+.apto{background:#1e293b;border-radius:12px;border:1px solid #334155;overflow:hidden}
+.apto-topo{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer}
+.apto-nome{font-size:16px;font-weight:700}
+.apto-dots{display:flex;gap:3px;margin-top:4px}
+.d{width:9px;height:9px;border-radius:50%;background:#334155}
+.d.ok{background:#22c55e}.d.parcial{background:#f59e0b}.d.faltando{background:#ef4444}
+.d.trancado{background:#8b5cf6}.d.sp{background:#64748b}.d.sf{background:#f97316}.d.na{background:#94a3b8}
+
+.badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.b-ok{background:#dcfce7;color:#22c55e}.b-parcial{background:#fef3c7;color:#f59e0b}
+.b-faltando{background:#fee2e2;color:#ef4444}.b-trancado{background:#ede9fe;color:#8b5cf6}
+.b-sp{background:#e2e8f0;color:#64748b}.b-sf{background:#fff7ed;color:#f97316}
+.b-na{background:#f1f5f9;color:#94a3b8}.b-vazio{background:#334155;color:#64748b}
+.b-entregue{background:#dbeafe;color:#1d4ed8}
+.chv{color:#64748b;font-size:13px;transition:transform .2s;margin-left:6px}
+.apto.open .chv{transform:rotate(180deg)}
+.apto.entregue{border-color:#1d4ed8;background:#060d1a}
+.btn-entregue{width:100%;background:#0f172a;color:#475569;border:2px dashed #334155;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px}
+.btn-entregue.on{background:#1e3a5f;color:#93c5fd;border:2px solid #3b82f6}
+.btn-fora{width:100%;background:#0f172a;color:#475569;border:2px dashed #334155;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}
+.btn-fora.on{background:#1c1400;color:#f59e0b;border:2px solid #f59e0b}
+.btn-estande{width:100%;background:#0f172a;color:#475569;border:2px dashed #334155;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}
+.btn-estande.on{background:#0d1f12;color:#4ade80;border:2px solid #22c55e}
+
+.apto-body{display:none;flex-direction:column;gap:10px;padding:12px;border-top:1px solid #334155}
+.apto.open .apto-body{display:flex}
+.amb-nome{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.btns{display:flex;flex-wrap:wrap;gap:5px}
+
+button.s{padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600;border:2px solid #334155;cursor:pointer;background:#0f172a;color:#94a3b8;transition:all .1s}
+button.s:active{transform:scale(.93)}
+button.s.ok{background:#dcfce7;color:#22c55e;border-color:#22c55e}
+button.s.parcial{background:#fef3c7;color:#f59e0b;border-color:#f59e0b}
+button.s.faltando{background:#fee2e2;color:#ef4444;border-color:#ef4444}
+button.s.trancado{background:#ede9fe;color:#8b5cf6;border-color:#8b5cf6}
+button.s.sp{background:#e2e8f0;color:#64748b;border-color:#64748b}
+button.s.sf{background:#fff7ed;color:#f97316;border-color:#f97316}
+button.s.na{background:#f1f5f9;color:#94a3b8;border-color:#94a3b8}
+
+textarea.obs{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 10px;color:#f1f5f9;font-size:13px;resize:none;margin-top:2px}
+textarea.obs:focus{outline:none;border-color:#3b82f6}
+textarea.obs::placeholder{color:#475569}
+
+/* Dashboard */
+.dash{padding:10px;display:flex;flex-direction:column;gap:10px}
+.dash-card{background:#1e293b;border-radius:12px;border:1px solid #334155;padding:14px;cursor:pointer}
+.dash-card:active{opacity:.85}
+.dash-titulo{font-size:16px;font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.dash-pct{font-size:13px;font-weight:700;color:#3b82f6}
+.dash-barra{height:6px;background:#334155;border-radius:3px;margin-bottom:10px}
+.dash-fill{height:100%;border-radius:3px;background:#22c55e;transition:width .3s}
+.dash-stats{display:flex;flex-wrap:wrap;gap:8px}
+.dash-stat{display:flex;align-items:center;gap:5px;font-size:12px;color:#94a3b8}
+.dash-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dash-total{font-size:11px;color:#475569;margin-top:8px}
+
+/* Modais */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:20;align-items:flex-end}
+.modal-bg.on{display:flex}
+.modal{background:#1e293b;border-radius:20px 20px 0 0;padding:20px 16px 36px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:12px}
+.modal pre{white-space:pre-wrap;font-size:13px;line-height:1.7;background:#0f172a;padding:12px;border-radius:10px;margin-bottom:12px;max-height:40vh;overflow-y:auto}
+.modal-btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn-fechar{flex:1;min-width:80px;background:#334155;color:#f1f5f9;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
+.btn-copiar{flex:1;min-width:80px;background:#0f4c8a;color:#93c5fd;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
+.btn-copiar.copiado{background:#14532d;color:#86efac}
+.btn-cloud{flex:2;min-width:120px;background:#3b82f6;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
+.btn-importar-link{width:100%;background:none;border:1px dashed #334155;color:#64748b;padding:12px;border-radius:12px;font-size:14px;cursor:pointer;margin-top:4px}
+.btn-importar-link:active{background:#1e293b}
+
+.imp-area{width:100%;height:180px;background:#0f172a;border:1px solid #334155;border-radius:10px;padding:10px;color:#f1f5f9;font-size:13px;resize:none;margin-bottom:10px}
+.imp-area:focus{outline:none;border-color:#3b82f6}
+.imp-msg{font-size:13px;min-height:20px;margin-bottom:10px;padding:8px 12px;border-radius:8px;display:none}
+.imp-msg.ok{display:block;background:#14532d;color:#86efac}
+.imp-msg.err{display:block;background:#450a0a;color:#fca5a5}
+
+.pad{height:28px}
+
+/* Login */
+#login-screen{position:fixed;inset:0;background:#0f172a;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+#login-screen input{width:100%;max-width:300px;background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px 16px;color:#f1f5f9;font-size:16px;margin-bottom:10px;outline:none;text-align:center}
+#login-screen input:focus{border-color:#3b82f6}
+#login-screen button{width:100%;max-width:300px;background:#3b82f6;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin-top:4px}
+#login-erro{color:#ef4444;font-size:13px;margin-bottom:8px;display:none}
+/* Sync */
+#sync-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-left:6px;flex-shrink:0;transition:background .3s}
+#sync-dot.salvando{background:#f59e0b}
+#sync-dot.erro{background:#ef4444}
+/* Loading */
+#loading-overlay{position:fixed;inset:0;background:#0f172a;z-index:150;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+</style>
+</head>
+<body>
+
+<!-- Tela de login -->
+<div id="login-screen">
+  <div style="font-size:44px;margin-bottom:16px">🔑</div>
+  <h1 style="font-size:22px;font-weight:700;margin-bottom:6px">Controle de Chaves</h1>
+  <p style="color:#64748b;font-size:14px;margin-bottom:28px">LCR · Lake Club Residencial</p>
+  <input type="password" id="senha-input" placeholder="Senha de acesso" onkeydown="if(event.key==='Enter')entrar()">
+  <div id="login-erro">Senha incorreta</div>
+  <button onclick="entrar()">Entrar</button>
+</div>
+
+<!-- Carregando -->
+<div id="loading-overlay" style="display:none">
+  <div style="font-size:32px">🔑</div>
+  <div style="color:#94a3b8;font-size:14px">Carregando dados...</div>
+</div>
+
+<div class="header">
+  <div>
+    <h1>🔑 Controle de Chaves <span id="sync-dot" title="Sincronizado"></span></h1>
+    <span id="sub">LCR</span>
+  </div>
+  <div class="header-btns">
+    <button class="btn-imp" id="btn-imp" onclick="abrirImport()" title="Importar de outro celular">📥</button>
+    <button class="btn-res" id="btn-res" onclick="verResumo()">Resumo →</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="prog" id="progbar" style="display:none"><div id="prog" style="width:0%"></div></div>
+<div id="conteudo"></div>
+<div class="pad"></div>
+
+<!-- Modal Resumo -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h2>📋 Resumo</h2>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button id="tab-torre" onclick="verResumo()" style="flex:1;padding:8px;border-radius:8px;font-size:13px;font-weight:600;border:2px solid #3b82f6;background:#1e293b;color:#3b82f6;cursor:pointer">Torre atual</button>
+      <button id="tab-todas" onclick="verResumoGeral()" style="flex:1;padding:8px;border-radius:8px;font-size:13px;font-weight:600;border:2px solid #334155;background:#0f172a;color:#64748b;cursor:pointer">Todas as Torres</button>
+    </div>
+    <pre id="mpre"></pre>
+    <div class="modal-btns">
+      <button class="btn-fechar" onclick="document.getElementById('modal').classList.remove('on')">Fechar</button>
+      <button class="btn-copiar" id="btn-copiar" onclick="copiarResumo()">📋 Copiar</button>
+      <button class="btn-cloud" onclick="salvarNuvem()">☁️ Salvar</button>
+    </div>
+    <button class="btn-importar-link" onclick="document.getElementById('modal').classList.remove('on');abrirImport()">
+      📥 Importar dados de outro celular
+    </button>
+  </div>
+</div>
+
+<!-- Modal Importar -->
+<div class="modal-bg" id="modal-imp">
+  <div class="modal">
+    <h2>📥 Importar Resumo</h2>
+    <p style="color:#94a3b8;font-size:14px;margin-bottom:12px;line-height:1.5">
+      Cole abaixo o resumo copiado do outro celular. Os dados serão mesclados com o que já existe aqui.
+    </p>
+    <textarea class="imp-area" id="imp-text" placeholder="Cole o texto aqui..."></textarea>
+    <div class="imp-msg" id="imp-msg"></div>
+    <div class="modal-btns">
+      <button class="btn-fechar" onclick="fecharImport()">Cancelar</button>
+      <button class="btn-cloud" onclick="executarImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CFG = {
+  A:{a:['Sala','Sacada','Quarto 1','Quarto 2','Suíte','Área Técnica','Divisória'],n:6,u:4},
+  B:{a:['Sala','Sacada','Quarto 1','Quarto 2','Suíte','Área Técnica','Divisória'],n:6,u:4},
+  E:{a:['Sala','Sacada','Quarto','Suíte','Área Técnica','Divisória'],n:6,u:4},
+  F:{a:['Sala','Sacada','Quarto','Suíte','Área Técnica','Divisória'],n:6,u:4},
+};
+const ST = [
+  {k:'ok',l:'✓ OK',c:'ok'},
+  {k:'parcial',l:'½ Parcial',c:'parcial'},
+  {k:'faltando',l:'✗ Faltando',c:'faltando'},
+  {k:'trancado',l:'🔒 Trancado',c:'trancado'},
+  {k:'sp',l:'🚪 Sem Porta',c:'sp'},
+  {k:'sf',l:'⚙ Sem Fech.',c:'sf'},
+];
+const SL = {ok:'OK (2 chaves)',parcial:'Parcial (1 chave)',faltando:'Faltando (0)',
+  trancado:'Trancado',sp:'Sem Porta',sf:'Sem Fechadura',na:'N/A','':'—'};
+const SL_REV = {'OK (2 chaves)':'ok','Parcial (1 chave)':'parcial','Faltando (0)':'faltando',
+  'Trancado':'trancado','Sem Porta':'sp','Sem Fechadura':'sf','N/A':'na'};
+const PRI = ['sf','sp','faltando','trancado','parcial','ok','na'];
+const DC  = {ok:'ok',parcial:'parcial',faltando:'faltando',trancado:'trancado',sp:'sp',sf:'sf',na:'na'};
+const COR = {ok:'#22c55e',parcial:'#f59e0b',faltando:'#ef4444',trancado:'#8b5cf6',sp:'#64748b',sf:'#f97316',na:'#94a3b8'};
+
+// ── Supabase ──────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://ltuxtrvdsocykdulxlmn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_mgDOratjOju1IR98uzlRSQ_aCgQVv6S';
+const SENHA = 'lcr2026'; // senha de acesso
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let torre = 'A';
+let aba   = 'A';
+let D = {};
+let _obsTimers = {};
+let _meuSave = new Set(); // IDs sendo salvos por mim (evita re-render do realtime)
+
+function setSyncDot(estado){
+  const el=document.getElementById('sync-dot');
+  if(!el) return;
+  el.className = estado==='ok'?'':'sync-dot '+(estado==='salvando'?'salvando':'erro');
+}
+
+async function save(id){
+  setSyncDot('salvando');
+  _meuSave.add(id);
+  const { error } = await sb.from('chaves_lcr').upsert({
+    id, dados: D[id]||{}, atualizado_em: new Date().toISOString()
+  });
+  if(error){ console.error('Erro ao salvar:',error); setSyncDot('erro'); }
+  else setSyncDot('ok');
+  setTimeout(()=>_meuSave.delete(id), 2000);
+}
+
+async function carregarDados(){
+  const { data, error } = await sb.from('chaves_lcr').select('id, dados');
+  if(error){ console.error(error); return; }
+  D = {};
+  (data||[]).forEach(row=>{ D[row.id]=row.dados; });
+}
+
+function iniciarRealtime(){
+  sb.channel('chaves_lcr_sync')
+    .on('postgres_changes',{event:'*',schema:'public',table:'chaves_lcr'},payload=>{
+      const id = (payload.new||payload.old||{}).id;
+      if(id && _meuSave.has(id)) return; // foi eu quem salvei
+      if(payload.eventType==='DELETE') delete D[payload.old.id];
+      else D[payload.new.id] = payload.new.dados;
+      renderConteudo();
+    })
+    .subscribe();
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+function entrar(){
+  const v = document.getElementById('senha-input').value;
+  if(v === SENHA){
+    sessionStorage.setItem('auth','1');
+    document.getElementById('login-screen').style.display='none';
+    init();
+  } else {
+    document.getElementById('login-erro').style.display='block';
+    document.getElementById('senha-input').value='';
+  }
+}
+
+async function init(){
+  document.getElementById('loading-overlay').style.display='flex';
+  await carregarDados();
+  document.getElementById('loading-overlay').style.display='none';
+  iniciarRealtime();
+  renderTabs();
+  renderConteudo();
+}
+
+function getAmbientes(id){
+  return CFG[id[0]].a;
+}
+
+// Área Técnica nas unidades 2 e 3 é compartilhada → 1 chave é o esperado (parcial = ok)
+function areaCompartilhada(id){
+  const u=parseInt(id.slice(-1));
+  return u===2||u===3;
+}
+function isNaoConforme(id,amb,st){
+  if(!st||st==='ok'||st==='na') return false;
+  // Área Técnica compartilhada (unid 2 e 3): só faltando é não conformidade
+  if(amb==='Área Técnica'&&areaCompartilhada(id)) return st==='faltando';
+  return st==='faltando'||st==='parcial';
+}
+
+function geral(id){
+  const d = D[id]||{};
+  const v = getAmbientes(id).map(a => d[a]||'');
+  if(v.every(x=>!x)) return '';
+  for(const p of PRI) if(v.includes(p)) return p;
+  return '';
+}
+const bCls = s => 'b-'+(s||'vazio');
+const bLbl = s => ({ok:'OK ✓',parcial:'Parcial',faltando:'Faltando',trancado:'Trancado',
+                    sp:'S.Porta',sf:'S.Fech.',na:'N/A'}[s]||'—');
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function renderTabs(){
+  document.getElementById('tabs').innerHTML = [
+    ...Object.keys(CFG).map(t =>
+      `<div class="tab${aba===t?' on':''}" onclick="setAba('${t}')">Torre ${t}</div>`),
+    `<div class="tab${aba==='dash'?' on':''}" onclick="setAba('dash')">📊 Dashboard</div>`,
+    `<div class="tab${aba==='nc'?' on':''}" onclick="setAba('nc')">⚠️ N.Conformes</div>`,
+    `<div class="tab${aba==='rastreio'?' on':''}" onclick="setAba('rastreio')">🔑 Rastreio</div>`,
+  ].join('');
+}
+
+function setAba(a){
+  aba=a;
+  if(['A','B','E','F'].includes(a)) torre=a;
+  renderTabs();
+  renderConteudo();
+}
+
+function renderConteudo(){
+  const isTorre = ['A','B','E','F'].includes(aba);
+  document.getElementById('progbar').style.display = isTorre ? 'block' : 'none';
+  document.getElementById('btn-res').style.display  = isTorre ? 'inline-block' : 'none';
+  document.getElementById('btn-imp').style.display  = 'inline-block';
+  if(isTorre){
+    document.getElementById('conteudo').innerHTML = '<div class="lista" id="lista"></div>';
+    renderLista();
+  } else if(aba === 'nc'){
+    document.getElementById('conteudo').innerHTML = '<div class="dash" id="nc-content"></div>';
+    renderNaoConformes();
+  } else if(aba === 'rastreio'){
+    document.getElementById('conteudo').innerHTML = '<div class="dash" id="rastreio-content"></div>';
+    renderRastreio();
+  } else {
+    document.getElementById('conteudo').innerHTML = '<div class="dash" id="dash"></div>';
+    renderDash();
+  }
+}
+
+// ── Lista ─────────────────────────────────────────────────────────────────────
+function renderLista(){
+  const lista = document.getElementById('lista');
+  if(!lista) return;
+  const cfg = CFG[torre];
+  let html='',tot=0,pre=0;
+  for(let a=1;a<=cfg.n;a++){
+    html+=`<div class="albl">${a}º Andar</div>`;
+    for(let u=1;u<=cfg.u;u++){
+      const id=`${torre}${a}0${u}`;
+      tot++; if(geral(id)) pre++;
+      html+=cardHtml(id);
+    }
+  }
+  lista.innerHTML=html;
+  atualizaProgresso(pre,tot);
+}
+
+function atualizaProgresso(pre,tot){
+  const p=tot?Math.round(pre/tot*100):0;
+  document.getElementById('prog').style.width=p+'%';
+  document.getElementById('sub').textContent=`LCR · Torre ${torre} · ${pre}/${tot} · ${p}%`;
+}
+
+function cardHtml(id){
+  const ambs = getAmbientes(id);
+  const d = D[id]||{}; const g = geral(id);
+  const entregue = !!d._entregue;
+  const local = d._local||'';
+  const dots = ambs.map(a=>`<div class="d ${DC[d[a]]||''}"></div>`).join('');
+  const body = ambs.map(a=>{
+    const cur=d[a]||'';
+    const btns=ST.map(s=>`<button class="s${cur===s.k?' '+s.c:''}" onclick="setVal('${id}','${a}','${s.k}')">${s.l}</button>`).join('');
+    const hint=(a==='Área Técnica'&&areaCompartilhada(id))
+      ?`<span style="font-size:10px;color:#475569;margin-left:6px">compartilhada · OK = tem · Faltando = não tem</span>`:'';
+    return `<div><div class="amb-nome">${a}${hint}</div><div class="btns">${btns}</div></div>`;
+  }).join('')+
+  `<textarea class="obs" rows="2" placeholder="Observações..." oninput="setObs('${id}',this.value)">${d._obs||''}</textarea>`+
+  `<button class="btn-fora${local==='fora'?' on':''}" onclick="setLocal('${id}','fora',event)">${local==='fora'?'🚗 Fora do Escritório ✓':'🚗 Fora do Escritório'}</button>`+
+  `<button class="btn-estande${local==='estande'?' on':''}" onclick="setLocal('${id}','estande',event)">${local==='estande'?'🏢 No Estande ✓':'🏢 No Estande'}</button>`+
+  `<button class="btn-entregue${entregue?' on':''}" onclick="toggleEntregue('${id}',event)">${entregue?'📦 Unidade Entregue ✓':'📦 Marcar como Entregue'}</button>`;
+  return `<div class="apto${entregue?' entregue':''}" id="c${id}">
+    <div class="apto-topo" onclick="toggle('${id}')">
+      <div><div class="apto-nome">${id}${entregue?' <span style=\'font-size:11px;color:#3b82f6\'>Entregue</span>':''}</div><div class="apto-dots">${dots}</div></div>
+      <div style="display:flex;align-items:center;gap:4px">
+        ${local==='fora'?`<span class="badge" style="background:#1c140088;color:#f59e0b">🚗 Fora</span>`:''}
+        ${local==='estande'?`<span class="badge" style="background:#0d1f1288;color:#4ade80">🏢 Estande</span>`:''}
+        ${entregue?'<span class="badge b-entregue">📦</span>':''}
+        <span class="badge ${bCls(g)}">${bLbl(g)}</span>
+        <span class="chv">▾</span>
+      </div>
+    </div>
+    <div class="apto-body">${body}</div>
+  </div>`;
+}
+
+function setLocal(id, tipo, e){
+  e.stopPropagation();
+  if(!D[id])D[id]={};
+  D[id]._local = D[id]._local===tipo ? '' : tipo;
+  save(id);
+  const el=document.getElementById('c'+id);
+  const aberto=el.classList.contains('open');
+  el.outerHTML=cardHtml(id);
+  if(aberto) document.getElementById('c'+id).classList.add('open');
+}
+
+function toggleEntregue(id, e){
+  e.stopPropagation();
+  if(!D[id])D[id]={};
+  D[id]._entregue = !D[id]._entregue;
+  save(id);
+  const el=document.getElementById('c'+id);
+  const aberto=el.classList.contains('open');
+  el.outerHTML=cardHtml(id);
+  if(aberto) document.getElementById('c'+id).classList.add('open');
+}
+
+function toggle(id){ document.getElementById('c'+id).classList.toggle('open'); }
+
+function setVal(id,amb,val){
+  if(!D[id]) D[id]={};
+  D[id][amb] = D[id][amb]===val ? '' : val;
+  save(id);
+  const el=document.getElementById('c'+id);
+  const aberto=el.classList.contains('open');
+  el.outerHTML=cardHtml(id);
+  if(aberto) document.getElementById('c'+id).classList.add('open');
+  const cfg=CFG[torre]; let tot=0,pre=0;
+  for(let a=1;a<=cfg.n;a++) for(let u=1;u<=cfg.u;u++){const i=`${torre}${a}0${u}`;tot++;if(geral(i))pre++;}
+  atualizaProgresso(pre,tot);
+}
+
+function setObs(id,v){
+  if(!D[id])D[id]={};
+  D[id]._obs=v;
+  clearTimeout(_obsTimers[id]);
+  _obsTimers[id]=setTimeout(()=>save(id), 1200);
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function renderDash(){
+  const dash=document.getElementById('dash');
+  if(!dash) return;
+  let html='';
+  for(const t of Object.keys(CFG)){
+    const cfg=CFG[t];
+    let tot=0,pre=0,ent=0; const cnt={};
+    for(let a=1;a<=cfg.n;a++) for(let u=1;u<=cfg.u;u++){
+      const id=`${t}${a}0${u}`; const g=geral(id); const d=D[id]||{}; tot++;
+      if(g){ pre++; cnt[g]=(cnt[g]||0)+1; }
+      if(d._entregue) ent++;
+    }
+    const pct=tot?Math.round(pre/tot*100):0;
+    const stats=Object.entries(cnt).map(([k,v])=>
+      `<div class="dash-stat"><div class="dash-dot" style="background:${COR[k]}"></div>${v} ${bLbl(k)}</div>`
+    ).join('');
+    const entTag=ent?`<div class="dash-stat"><div class="dash-dot" style="background:#3b82f6"></div>${ent} Entregue${ent>1?'s':''}</div>`:'';
+    html+=`<div class="dash-card" onclick="setAba('${t}')">
+      <div class="dash-titulo">Torre ${t} <span class="dash-pct">${pct}%</span></div>
+      <div class="dash-barra"><div class="dash-fill" style="width:${pct}%"></div></div>
+      <div class="dash-stats">${stats||'<span style="color:#475569;font-size:12px">Sem registros ainda</span>'}${entTag}</div>
+      <div class="dash-total">${pre}/${tot} unidades com registro${ent?' · '+ent+' entregue'+(ent>1?'s':'')+' 📦':''} · toque para abrir</div>
+    </div>`;
+  }
+  dash.innerHTML=html;
+}
+
+// ── Não Conformes ─────────────────────────────────────────────────────────────
+
+const FORN = {
+  'Sacada':'WA','Área Técnica':'WA','Divisória':'WA',
+  'Sala':'Wood Portas','Quarto 1':'Wood Portas','Quarto 2':'Wood Portas',
+  'Quarto':'Wood Portas','Suíte':'Wood Portas',
+};
+
+function renderNaoConformes(){
+  const el = document.getElementById('nc-content');
+  if(!el) return;
+  const NC = ['faltando','parcial'];
+  let html='', total=0;
+  // coleta por fornecedor
+  const forn = {'WA':{faltando:[],parcial:[]},'Wood Portas':{faltando:[],parcial:[]}};
+
+  for(const t of Object.keys(CFG)){
+    const cfg=CFG[t];
+    let blocoHtml='', count=0;
+    for(let a=1;a<=cfg.n;a++) for(let u=1;u<=cfg.u;u++){
+      const id=`${t}${a}0${u}`;
+      const d=D[id]||{};
+      if(d._entregue) continue;
+      const ambs=getAmbientes(id);
+      const nc=ambs.filter(amb=>isNaoConforme(id,amb,d[amb]));
+      if(!nc.length) continue;
+      count++; total++;
+      // acumula por fornecedor
+      nc.forEach(amb=>{
+        const f=FORN[amb]||'WA';
+        forn[f][d[amb]].push(`${id} — ${amb}`);
+      });
+      const entTag=d._entregue?` <span style="font-size:11px;color:#3b82f6">📦 Entregue</span>`:'';
+      const rows=nc.map(amb=>{
+        const st=d[amb];
+        const cor=st==='faltando'?'#ef4444':'#f59e0b';
+        const lbl=st==='faltando'?'✗ Faltando (0 chaves)':'½ Parcial (1 chave)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #0f172a">
+          <span style="font-size:13px;color:#94a3b8">${amb}</span>
+          <span style="font-size:12px;font-weight:700;color:${cor}">${lbl}</span>
+        </div>`;
+      }).join('');
+      blocoHtml+=`<div style="background:#1e293b;border-radius:10px;border:1px solid #334155;margin-bottom:8px;overflow:hidden">
+        <div style="padding:11px 14px;border-bottom:1px solid #0f172a;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:15px;font-weight:700">${id}${entTag}</span>
+          <span style="font-size:11px;color:#ef4444;font-weight:600">${nc.length} porta${nc.length>1?'s':''} pendente${nc.length>1?'s':''}</span>
+        </div>
+        <div style="padding:4px 14px 6px">${rows}</div>
+      </div>`;
+    }
+    if(count){
+      html+=`<div class="albl">Torre ${t} · ${count} unidade${count>1?'s':''}</div>${blocoHtml}`;
+    }
+  }
+
+  if(!html){
+    el.innerHTML=`<div style="text-align:center;padding:48px 20px;color:#475569">
+      <div style="font-size:36px;margin-bottom:12px">✅</div>
+      <div style="font-size:15px;font-weight:600;color:#94a3b8">Nenhuma não conformidade</div>
+      <div style="font-size:13px;margin-top:6px">Todas as portas registradas estão OK</div>
+    </div>`;
+    return;
+  }
+
+  // cards de fornecedor — agrupado por tipo de porta
+  function fornCard(nome, cor, listaAmbs, dados){
+    const tot=dados.faltando.length+dados.parcial.length;
+    if(!tot) return `<div style="background:#1e293b;border-radius:10px;border:1px solid #334155;padding:12px 14px;margin-bottom:8px;opacity:.5">
+      <div style="font-size:13px;font-weight:700;color:#94a3b8">${nome} <span style="font-weight:400;font-size:11px">${listaAmbs.join(' · ')}</span></div>
+      <div style="font-size:12px;color:#475569;margin-top:4px">✓ Sem pendências</div>
+    </div>`;
+    // agrupa por apartamento
+    const porApto={};
+    ['faltando','parcial'].forEach(st=>dados[st].forEach(({id,amb})=>{
+      if(!porApto[id])porApto[id]=[];
+      porApto[id].push({amb,st});
+    }));
+    const secoes=Object.entries(porApto).sort(([a],[b])=>a.localeCompare(b)).map(([id,itens])=>{
+      const tags=itens.map(({amb,st})=>{
+        const cor=st==='faltando'?'#ef4444':'#f59e0b';
+        const ico=st==='faltando'?'✗':'½';
+        return `<span style="font-size:11px;color:${cor};font-weight:600">${ico} ${amb}</span>`;
+      }).join('<span style="color:#334155"> · </span>');
+      return `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:baseline;padding:6px 0;border-bottom:1px solid #0f172a">
+        <span style="font-size:13px;font-weight:700;color:#f1f5f9;min-width:48px">${id}</span>
+        <span style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${tags}</span>
+      </div>`;
+    }).join('');
+    return `<div style="background:#1e293b;border-radius:10px;border:1px solid ${cor};padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:14px;font-weight:700;color:#f1f5f9">${nome}</span>
+        <span style="font-size:12px;font-weight:700;color:${cor}">${tot} porta${tot>1?'s':''}</span>
+      </div>
+      ${secoes}
+    </div>`;
+  }
+
+  // reconstrói dados como {id, amb} para agrupamento por ambiente
+  const forn2={'WA':{faltando:[],parcial:[]},'Wood Portas':{faltando:[],parcial:[]}};
+  for(const t of Object.keys(CFG)){
+    const cfg=CFG[t];
+    for(let a=1;a<=cfg.n;a++) for(let u=1;u<=cfg.u;u++){
+      const id=`${t}${a}0${u}`;const d=D[id]||{};
+      getAmbientes(id).forEach(amb=>{
+        if(!isNaoConforme(id,amb,d[amb]))return;
+        const f=FORN[amb]||'WA';
+        forn2[f][d[amb]].push({id,amb});
+      });
+    }
+  }
+
+  const secForn=`<div class="albl" style="padding-top:4px">Por Fornecedor</div>`+
+    fornCard('WA','#3b82f6',['Sacada','Área Técnica','Divisória'],forn2['WA'])+
+    fornCard('Wood Portas','#a855f7',['Sala','Quarto 1','Quarto 2','Quarto','Suíte'],forn2['Wood Portas'])+
+    `<div class="albl">Por Unidade</div>`;
+
+  const banner=`<div style="background:#450a0a;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:14px;font-weight:700;color:#fca5a5">⚠️ ${total} unidade${total>1?'s':''} com pendência</span>
+    <span style="font-size:12px;color:#ef4444">solicitar cópias</span>
+  </div>`;
+  el.innerHTML=banner+secForn+html;
+}
+
+// ── Rastreio ──────────────────────────────────────────────────────────────────
+function renderRastreio(){
+  const el = document.getElementById('rastreio-content');
+  if(!el) return;
+
+  const fora=[], estande=[], entregues=[];
+  for(const t of Object.keys(CFG)){
+    const cfg=CFG[t];
+    for(let a=1;a<=cfg.n;a++) for(let u=1;u<=cfg.u;u++){
+      const id=`${t}${a}0${u}`;
+      const d=D[id]||{};
+      if(d._local==='fora'){
+        const ambs=getAmbientes(id);
+        const nc=ambs.filter(amb=>isNaoConforme(id,amb,d[amb]));
+        fora.push({id,obs:d._obs||'',nc});
+      }
+      if(d._local==='estande'){
+        const ambs=getAmbientes(id);
+        const nc=ambs.filter(amb=>isNaoConforme(id,amb,d[amb]));
+        estande.push({id,obs:d._obs||'',nc});
+      }
+      if(d._entregue){
+        const ambs=getAmbientes(id);
+        const nc=ambs.filter(amb=>isNaoConforme(id,amb,d[amb]));
+        entregues.push({id,obs:d._obs||'',nc});
+      }
+    }
+  }
+
+  function listaFora(items){
+    if(!items.length) return `<div style="font-size:13px;color:#475569;padding:8px 0">Nenhuma unidade</div>`;
+    return items.map(({id,obs,nc})=>{
+      const temPendencia=nc.length>0;
+      const d=D[id]||{};
+      const pendTag=temPendencia
+        ?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${nc.map(amb=>{
+            const st=d[amb];
+            const cor=st==='faltando'?'#ef4444':'#f59e0b';
+            const ico=st==='faltando'?'✗':'½';
+            return `<span style="font-size:11px;color:${cor};font-weight:700;background:${st==='faltando'?'#450a0a':'#451a03'};padding:2px 7px;border-radius:10px">${ico} ${amb}</span>`;
+          }).join('')}</div>`:'';
+      return `
+      <div style="padding:8px 0;border-bottom:1px solid #0f172a;cursor:pointer" onclick="setAba('${id[0]}');setTimeout(()=>{const c=document.getElementById('c${id}');if(c){c.scrollIntoView({behavior:'smooth',block:'center'});if(!c.classList.contains('open')){c.querySelector('.apto-topo').click()}}},120)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px;font-weight:700;min-width:52px;color:#f1f5f9">${id}</span>
+          ${temPendencia?`<span style="font-size:11px;font-weight:700;color:#ef4444">⚠️ ${nc.length} pendente${nc.length>1?'s':''}</span>`:'<span style="font-size:11px;color:#22c55e">✓ completa</span>'}
+          ${obs?`<span style="font-size:12px;color:#64748b;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${obs}</span>`:''}
+        </div>
+        ${pendTag}
+      </div>`;
+    }).join('');
+  }
+
+  function listaEntregues(items){
+    if(!items.length) return `<div style="font-size:13px;color:#475569;padding:8px 0">Nenhuma unidade</div>`;
+    return items.map(({id,obs,nc})=>{
+      const temPendencia=nc.length>0;
+      const d=D[id]||{};
+      const pendTag=temPendencia
+        ?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${nc.map(amb=>{
+            const st=d[amb];
+            const cor=st==='faltando'?'#ef4444':'#f59e0b';
+            const ico=st==='faltando'?'✗':'½';
+            return `<span style="font-size:11px;color:${cor};font-weight:700;background:${st==='faltando'?'#450a0a':'#451a03'};padding:2px 7px;border-radius:10px">${ico} ${amb}</span>`;
+          }).join('')}</div>`:'';
+      return `
+      <div style="padding:8px 0;border-bottom:1px solid #0f172a;cursor:pointer" onclick="setAba('${id[0]}');setTimeout(()=>{const c=document.getElementById('c${id}');if(c){c.scrollIntoView({behavior:'smooth',block:'center'});if(!c.classList.contains('open')){c.querySelector('.apto-topo').click()}}},120)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px;font-weight:700;min-width:52px;color:#f1f5f9">${id}</span>
+          ${temPendencia?`<span style="font-size:11px;font-weight:700;color:#ef4444">⚠️ ${nc.length} pendente${nc.length>1?'s':''}</span>`:'<span style="font-size:11px;color:#22c55e">✓ completa</span>'}
+          ${obs?`<span style="font-size:12px;color:#64748b;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${obs}</span>`:''}
+        </div>
+        ${pendTag}
+      </div>`;
+    }).join('');
+  }
+
+  const comPend=entregues.filter(e=>e.nc.length>0).length;
+  const pendBanner=comPend?`<div style="font-size:12px;color:#f59e0b;margin-bottom:10px">⚠️ ${comPend} entregue${comPend>1?'s':''} com chave${comPend>1?'s':''} pendente${comPend>1?'s':''}</div>`:'';
+
+  el.innerHTML=`
+    <div style="margin-bottom:10px">
+      <div style="background:#1c1400;border:1px solid #f59e0b;border-radius:12px;padding:14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:15px;font-weight:700;color:#f59e0b">🚗 Fora do Escritório</span>
+          <span style="font-size:13px;font-weight:700;color:#f59e0b">${fora.length} unidade${fora.length!==1?'s':''}</span>
+        </div>
+        ${listaFora(fora)}
+      </div>
+      <div style="background:#0a1a0e;border:1px solid #22c55e;border-radius:12px;padding:14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:15px;font-weight:700;color:#4ade80">🏢 No Estande</span>
+          <span style="font-size:13px;font-weight:700;color:#4ade80">${estande.length} unidade${estande.length!==1?'s':''}</span>
+        </div>
+        ${listaFora(estande)}
+      </div>
+      <div style="background:#060d1a;border:1px solid #3b82f6;border-radius:12px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:15px;font-weight:700;color:#93c5fd">📦 Unidades Entregues</span>
+          <span style="font-size:13px;font-weight:700;color:#93c5fd">${entregues.length} unidade${entregues.length!==1?'s':''}</span>
+        </div>
+        ${pendBanner}
+        ${listaEntregues(entregues)}
+      </div>
+    </div>`;
+}
+
+// ── Resumo ────────────────────────────────────────────────────────────────────
+function gerarTextoTorre(t){
+  const cfg=CFG[t];
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const lines=[`CONTROLE DE CHAVES — LCR`,`Torre ${t} · ${hoje}`,'─'.repeat(36)];
+  let tot=0,pre=0;
+  for(let a=1;a<=cfg.n;a++){
+    lines.push(`\n${a}º ANDAR`);
+    for(let u=1;u<=cfg.u;u++){
+      const id=`${t}${a}0${u}`;
+      const d=D[id]||{}; const g=geral(id);
+      tot++; if(g)pre++;
+      const entTag=d._entregue?' ★ ENTREGUE':'';
+      const foraTag=d._local==='fora'?' 🚗 FORA':d._local==='estande'?' 🏢 ESTANDE':'';
+      lines.push(`  ${id}  [${SL[g]||'—'}]${entTag}${foraTag}`);
+      getAmbientes(id).forEach(a2=>{const s=d[a2]||'';if(s)lines.push(`    ${a2}: ${SL[s]}`);});
+      if(d._obs)lines.push(`    Obs: ${d._obs}`);
+    }
+  }
+  lines.push('\n'+'─'.repeat(36));
+  lines.push(`${pre}/${tot} unidades preenchidas`);
+  return lines.join('\n');
+}
+
+function setTabResumo(ativa){
+  document.getElementById('tab-torre').style.cssText='flex:1;padding:8px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:2px solid '+(ativa==='torre'?'#3b82f6;background:#1e293b;color:#3b82f6':'#334155;background:#0f172a;color:#64748b');
+  document.getElementById('tab-todas').style.cssText='flex:1;padding:8px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:2px solid '+(ativa==='todas'?'#3b82f6;background:#1e293b;color:#3b82f6':'#334155;background:#0f172a;color:#64748b');
+}
+
+function verResumo(){
+  setTabResumo('torre');
+  document.getElementById('mpre').textContent=gerarTextoTorre(torre);
+  const btn=document.getElementById('btn-copiar');
+  btn.textContent='📋 Copiar'; btn.className='btn-copiar';
+  document.getElementById('modal').classList.add('on');
+}
+
+function verResumoGeral(){
+  setTabResumo('todas');
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const partes=[`CONTROLE DE CHAVES — LCR`,`Todas as Torres · ${hoje}`,'═'.repeat(36)];
+  let totG=0,preG=0;
+  for(const t of Object.keys(CFG)){
+    partes.push('');
+    partes.push(`${'═'.repeat(36)}`);
+    partes.push(`TORRE ${t}`);
+    partes.push('─'.repeat(36));
+    const cfg=CFG[t]; let tot=0,pre=0;
+    for(let a=1;a<=cfg.n;a++){
+      partes.push(`\n${a}º ANDAR`);
+      for(let u=1;u<=cfg.u;u++){
+        const id=`${t}${a}0${u}`;
+        const d=D[id]||{}; const g=geral(id);
+        tot++; if(g)pre++;
+        const entTag=d._entregue?' ★ ENTREGUE':'';
+        const foraTag=d._local==='fora'?' 🚗 FORA':d._local==='estande'?' 🏢 ESTANDE':'';
+        partes.push(`  ${id}  [${SL[g]||'—'}]${entTag}${foraTag}`);
+        getAmbientes(id).forEach(a2=>{const s=d[a2]||'';if(s)partes.push(`    ${a2}: ${SL[s]}`);});
+        if(d._obs)partes.push(`    Obs: ${d._obs}`);
+      }
+    }
+    partes.push('\n'+'─'.repeat(36));
+    partes.push(`Torre ${t}: ${pre}/${tot} unidades`);
+    totG+=tot; preG+=pre;
+  }
+  partes.push('');
+  partes.push('═'.repeat(36));
+  partes.push(`TOTAL GERAL: ${preG}/${totG} unidades preenchidas`);
+  document.getElementById('mpre').textContent=partes.join('\n');
+  const btn=document.getElementById('btn-copiar');
+  btn.textContent='📋 Copiar'; btn.className='btn-copiar';
+  document.getElementById('modal').classList.add('on');
+}
+
+function copiarResumo(){
+  const txt=document.getElementById('mpre').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn=document.getElementById('btn-copiar');
+    btn.textContent='✓ Copiado'; btn.className='btn-copiar copiado';
+    setTimeout(()=>{ btn.textContent='📋 Copiar'; btn.className='btn-copiar'; }, 2500);
+  }).catch(()=>{
+    // Fallback para navegadores que bloqueiam clipboard
+    const ta=document.createElement('textarea');
+    ta.value=document.getElementById('mpre').textContent;
+    ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn=document.getElementById('btn-copiar');
+    btn.textContent='✓ Copiado'; btn.className='btn-copiar copiado';
+    setTimeout(()=>{ btn.textContent='📋 Copiar'; btn.className='btn-copiar'; }, 2500);
+  });
+}
+
+function salvarNuvem(){
+  const txt=document.getElementById('mpre').textContent;
+  const msg=`Gere um PDF com esse resumo do controle de chaves e salve na pasta Claude-Rian:\n\n${txt}`;
+  if(typeof sendPrompt==='function'){sendPrompt(msg);document.getElementById('modal').classList.remove('on');}
+  else{navigator.clipboard.writeText(msg).catch(()=>{});alert('Copie e cole no Claude para salvar o PDF.');}
+}
+
+// ── Importar ──────────────────────────────────────────────────────────────────
+function abrirImport(){
+  document.getElementById('imp-text').value='';
+  document.getElementById('imp-msg').className='imp-msg';
+  document.getElementById('imp-msg').textContent='';
+  document.getElementById('modal-imp').classList.add('on');
+}
+
+function fecharImport(){
+  document.getElementById('modal-imp').classList.remove('on');
+}
+
+function executarImport(){
+  const texto = document.getElementById('imp-text').value.trim();
+  const msg   = document.getElementById('imp-msg');
+
+  if(!texto){ msg.className='imp-msg err'; msg.textContent='Cole um texto antes de importar.'; return; }
+
+  let apto=null, count=0;
+  const linhas = texto.split('\n');
+
+  for(const linha of linhas){
+    // Linha de apartamento: "  A101  [...] ★ ENTREGUE 🚗 FORA"
+    const mApto = linha.match(/^\s+([A-F]\d{3})\s+\[/);
+    if(mApto){
+      apto=mApto[1];
+      if(!D[apto])D[apto]={};
+      D[apto]._entregue = /★ ENTREGUE/.test(linha);
+      D[apto]._local    = /🚗 FORA/.test(linha) ? 'fora' : /🏢 ESTANDE/.test(linha) ? 'estande' : '';
+      continue;
+    }
+    if(!apto) continue;
+
+    // Linha de ambiente: "    Sala: OK (2 chaves)"
+    const mAmb = linha.match(/^\s{4}([^:O][^:]+):\s+(.+)$/);
+    if(mAmb){
+      const amb = mAmb[1].trim();
+      const statusStr = mAmb[2].trim();
+      if(amb==='Obs'){
+        D[apto]._obs = statusStr;
+      } else {
+        const st = SL_REV[statusStr];
+        if(st){ D[apto][amb]=st; count++; }
+      }
+    }
+  }
+
+  if(count===0){
+    msg.className='imp-msg err';
+    msg.textContent='Nenhum dado reconhecido. Verifique se o texto é um resumo válido.';
+    return;
+  }
+
+  // Salva cada apartamento modificado no Supabase
+  const aptosModificados=[...new Set(linhas.map(l=>{const m=l.match(/^\s+([A-F]\d{3})\s+\[/);return m?m[1]:null}).filter(Boolean))];
+  Promise.all(aptosModificados.map(id=>save(id)));
+  msg.className='imp-msg ok';
+  msg.textContent=`✓ ${count} registros importados com sucesso!`;
+
+  // Atualiza a view atual
+  setTimeout(()=>{
+    fecharImport();
+    renderConteudo();
+  }, 1500);
+}
+
+// Verifica se já está autenticado (sessão ativa)
+if(sessionStorage.getItem('auth')==='1'){
+  document.getElementById('login-screen').style.display='none';
+  init();
+}
+</script>
+</body>
+</html>
