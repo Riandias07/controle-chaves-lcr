@@ -578,6 +578,7 @@ function renderNaoConformes(){
     const cfg=CFG[t];
     for(let a=1;a<=cfg.n;a++) for(let u=1;u<=cfg.u;u++){
       const id=`${t}${a}0${u}`;const d=D[id]||{};
+      if(d._entregue) continue; // ← exclui entregues dos cards de fornecedor
       getAmbientes(id).forEach(amb=>{
         if(!isNaoConforme(id,amb,d[amb]))return;
         const f=FORN[amb]||'WA';
@@ -588,8 +589,7 @@ function renderNaoConformes(){
 
   const secForn=`<div class="albl" style="padding-top:4px">Por Fornecedor</div>`+
     fornCard('WA','#3b82f6',['Sacada','Área Técnica','Divisória'],forn2['WA'])+
-    fornCard('Wood Portas','#a855f7',['Sala','Quarto 1','Quarto 2','Quarto','Suíte'],forn2['Wood Portas'])+
-    `<div class="albl">Por Unidade</div>`;
+    fornCard('Wood Portas','#a855f7',['Sala','Quarto 1','Quarto 2','Quarto','Suíte'],forn2['Wood Portas']);
 
   // ── Seção de entregues com pendência ──────────────────────────────────────
   let htmlEntregues='', totalEntregues=0;
@@ -636,7 +636,7 @@ function renderNaoConformes(){
     <span style="font-size:14px;font-weight:700;color:#fca5a5">⚠️ ${total} unidade${total>1?'s':''} com pendência</span>
     <span style="font-size:12px;color:#ef4444">solicitar cópias</span>
   </div>`;
-  el.innerHTML=banner+secForn+html+secEntregues;
+  el.innerHTML=banner+secForn+secEntregues+`<div class="albl">Por Unidade</div>`+html;
 }
 
 // ── Rastreio ──────────────────────────────────────────────────────────────────
