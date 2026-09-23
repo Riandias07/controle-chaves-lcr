@@ -591,11 +591,52 @@ function renderNaoConformes(){
     fornCard('Wood Portas','#a855f7',['Sala','Quarto 1','Quarto 2','Quarto','Suíte'],forn2['Wood Portas'])+
     `<div class="albl">Por Unidade</div>`;
 
+  // ── Seção de entregues com pendência ──────────────────────────────────────
+  let htmlEntregues='', totalEntregues=0;
+  for(const t of Object.keys(CFG)){
+    const cfg=CFG[t];
+    let blocoEnt='', countE=0;
+    for(let a=1;a<=cfg.n;a++) for(let u=1;u<=cfg.u;u++){
+      const id=`${t}${a}0${u}`;
+      const d=D[id]||{};
+      if(!d._entregue) continue;
+      const ambs=getAmbientes(id);
+      const nc=ambs.filter(amb=>isNaoConforme(id,amb,d[amb]));
+      if(!nc.length) continue;
+      countE++; totalEntregues++;
+      const rows=nc.map(amb=>{
+        const st=d[amb];
+        const cor=st==='faltando'?'#ef4444':'#f59e0b';
+        const lbl=st==='faltando'?'✗ Faltando (0 chaves)':'½ Parcial (1 chave)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #0f172a">
+          <span style="font-size:13px;color:#94a3b8">${amb}</span>
+          <span style="font-size:12px;font-weight:700;color:${cor}">${lbl}</span>
+        </div>`;
+      }).join('');
+      blocoEnt+=`<div style="background:#1e293b;border-radius:10px;border:1px solid #1d4ed8;margin-bottom:8px;overflow:hidden">
+        <div style="padding:11px 14px;border-bottom:1px solid #0f172a;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:15px;font-weight:700">${id} <span style="font-size:11px;color:#93c5fd">📦 Entregue</span></span>
+          <span style="font-size:11px;color:#ef4444;font-weight:600">${nc.length} porta${nc.length>1?'s':''} pendente${nc.length>1?'s':''}</span>
+        </div>
+        <div style="padding:4px 14px 6px">${rows}</div>
+      </div>`;
+    }
+    if(countE) htmlEntregues+=`<div class="albl">Torre ${t} · ${countE} unidade${countE>1?'s':''}</div>${blocoEnt}`;
+  }
+
+  const secEntregues = totalEntregues
+    ? `<div class="albl" style="padding-top:4px;color:#93c5fd">📦 Entregues com Pendência</div>
+       <div style="background:#060d1a;border:1px solid #1d4ed8;border-radius:10px;padding:12px 14px;margin-bottom:8px">
+         <div style="font-size:12px;color:#93c5fd;margin-bottom:10px">${totalEntregues} unidade${totalEntregues>1?'s':''} entregues ainda com chaves pendentes</div>
+         ${htmlEntregues}
+       </div>`
+    : '';
+
   const banner=`<div style="background:#450a0a;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:14px;font-weight:700;color:#fca5a5">⚠️ ${total} unidade${total>1?'s':''} com pendência</span>
     <span style="font-size:12px;color:#ef4444">solicitar cópias</span>
   </div>`;
-  el.innerHTML=banner+secForn+html;
+  el.innerHTML=banner+secForn+html+secEntregues;
 }
 
 // ── Rastreio ──────────────────────────────────────────────────────────────────
